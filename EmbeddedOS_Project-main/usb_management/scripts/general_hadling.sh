@@ -1,4 +1,24 @@
 #!/bin/bash
+# Script: general_hadling.sh
+# Usage: general_hadling.sh mount|unmount /dev/sdX
+
+ACTION=$1
+DEV=$2
+MOUNT_POINT="/mnt/usb_${DEV##*/}"
+if [ -z "$ACTION" ] || [ -z "$DEV" ]; then
+    echo "Usage: $0 mount|unmount /dev/sdX"
+    exit 1
+fi
+if [ "$ACTION" = "mount" ]; then
+    mkdir -p "$MOUNT_POINT"
+    mount "$DEV" "$MOUNT_POINT" && echo "Mounted $DEV at $MOUNT_POINT"
+elif [ "$ACTION" = "unmount" ]; then
+    umount "$DEV" && echo "Unmounted $DEV"
+else
+    echo "Unknown action: $ACTION"
+    exit 1
+fi
+
 DEVICE_PATH="$1"
 VENDOR_ID=$(udevadm info -q property -n $DEVICE_PATH | grep "ID_VENDOR_ID" | cut -d= -f2)
 PRODUCT_ID=$(udevadm info -q property -n $DEVICE_PATH | grep "ID_MODEL_ID" | cut -d= -f2)

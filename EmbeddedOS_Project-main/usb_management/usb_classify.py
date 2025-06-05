@@ -13,11 +13,14 @@ LOG_FILE = "/var/log/usb_classifier.log"
 MOUNT_BASE = "/mnt/usb"
 
 # ---- Load USB IDs ----
-USB_IDS_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'usb_ids.txt')
+USB_IDS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'usb_ids.txt')
 
 def get_all_device_ids(usb_ids_path):
     device_ids = []
     current_vendor = None
+    if not os.path.exists(usb_ids_path):
+        print(f"[usb_classify] Warning: {usb_ids_path} not found, whitelist will be ignored.")
+        return []
     try:
         with open(usb_ids_path, 'r') as f:
             for line in f:
@@ -46,6 +49,9 @@ logging.basicConfig(
 def load_usb_ids(file_path):
     usb_ids = {}
     current_vendor = None
+    if not os.path.exists(file_path):
+        print(f"[usb_classify] Warning: {file_path} not found, USB name database will be empty.")
+        return {}
     try:
         with open(file_path, 'r') as f:
             for line in f:
@@ -87,8 +93,8 @@ def classify_device(device):
     vendor = device.get('ID_VENDOR_ID', '').lower()
     product = device.get('ID_MODEL_ID', '').lower()
     
-    # Kiểm tra whitelist
-    if (vendor, product) not in WHITELIST_DEVICES:
+    # Kiểm tra whitelist nếu có
+    if WHITELIST_DEVICES and (vendor, product) not in WHITELIST_DEVICES:
         return "blocked"
     
     # Phân loại theo class code

@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 def load_hid_devices_from_usb_ids():
     usb_ids_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', '..', 'usb_ids.txt')
@@ -31,4 +32,11 @@ def can_handle(device):
     if (vendor, product) in HID_DEVICES:
         return True
     # Kiểm tra theo class code
-    return device.get('ID_USB_CLASS') == '03' 
+    return device.get('ID_USB_CLASS') == '03'
+
+def handle(device, action):
+    try:
+        subprocess.run(['modprobe', 'usbhid'], check=True)
+        return f"HID device handled: {device.get('ID_VENDOR_ID')}:{device.get('ID_MODEL_ID')}"
+    except Exception as e:
+        return f"Failed to handle HID device: {e}" 

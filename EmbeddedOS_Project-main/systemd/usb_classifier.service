@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/home/manhquan/WORKSPACE/USB-Devices-Manager-for-Pi-4-Model-B/EmbeddedOS_Project-main/others/usb_manager_daemon
+ExecStart=/usr/bin/python3 /ABSOLUTE/PATH/TO/EmbeddedOS_Project-main/usb_management/usb_classify.py
 Restart=on-failure
 StandardOutput=syslog
 StandardError=syslog

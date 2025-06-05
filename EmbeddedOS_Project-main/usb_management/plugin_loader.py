@@ -16,11 +16,11 @@ class PluginLoader:
                 self.plugins.append(module)
 
     def handle_device(self, device, action):
+        results = []
         for plugin in self.plugins:
             if hasattr(plugin, 'can_handle') and plugin.can_handle(device):
-                # Nếu plugin có hàm handle, gọi nó, nếu không chỉ trả về tên plugin
                 if hasattr(plugin, 'handle'):
-                    return plugin.handle(device, action)
+                    results.append(plugin.handle(device, action))
                 else:
-                    return f"Handled by {plugin.__name__}"
-        return None
+                    results.append(f"Handled by {plugin.__name__}")
+        return results if results else None

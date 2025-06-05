@@ -1,4 +1,4 @@
-// usb_manager_daemon.c - Phiên bản đã sửa và cải tiến
+// usb_manager_daemon.c 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

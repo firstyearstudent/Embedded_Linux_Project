@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 def load_audio_devices_from_usb_ids():
     usb_ids_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', '..', 'usb_ids.txt')
@@ -31,4 +32,11 @@ def can_handle(device):
     if (vendor, product) in AUDIO_DEVICES:
         return True
     # Kiểm tra theo class code
-    return device.get('ID_USB_CLASS') == '01' 
+    return device.get('ID_USB_CLASS') == '01'
+
+def handle(device, action):
+    try:
+        subprocess.run(['pulseaudio', '--start'], check=True)
+        return f"Audio device handled: {device.get('ID_VENDOR_ID')}:{device.get('ID_MODEL_ID')}"
+    except Exception as e:
+        return f"Failed to handle audio device: {e}" 

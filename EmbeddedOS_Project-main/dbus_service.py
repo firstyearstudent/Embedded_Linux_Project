@@ -7,6 +7,8 @@ import dbus
 import dbus.service
 import dbus.mainloop.glib
 from gi.repository import GLib
+import pyudev
+import subprocess
 
 # Giả sử bạn có các hàm hoặc class quản lý thiết bị USB ở nơi khác
 # Ở đây sẽ dùng biến giả lập để minh họa
@@ -18,11 +20,7 @@ class USBManagerService(dbus.service.Object):
 
     def __init__(self, bus, object_path='/org/example/USBManager'):
         super().__init__(bus, object_path)
-        # Danh sách thiết bị giả lập
-        self.device_list = [
-            {"id": "usb1", "name": "USB Flash", "status": "mounted"},
-            {"id": "usb2", "name": "USB Audio", "status": "unmounted"},
-        ]
+        self.context = pyudev.Context()
 
     @dbus.service.method("org.example.USBManager",
                          in_signature='', out_signature='a{sa{sv}}')
@@ -30,8 +28,26 @@ class USBManagerService(dbus.service.Object):
         """
         Trả về danh sách thiết bị USB hiện tại.
         """
-        # Trả về danh sách thiết bị dạng list các dict
-        return self.device_list
+        devices = []
+        for device in self.context.list_devices(subsystem='usb'):
+            dev = {
+                "id": device.get('ID_SERIAL_SHORT') or device.get('DEVPATH'),
+                "name": device.get('ID_MODEL') or device.get('ID_MODEL_ID'),
+                "status": "mounted" if device.get('DEVNAME') and self.is_mounted(device.get('DEVNAME')) else "unmounted",
+                "serial": device.get('ID_SERIAL_SHORT')
+            }
+            devices.append(dev)
+        return devices
+
+    def is_mounted(self, devname):
+        try:
+            with open('/proc/mounts', 'r') as f:
+                for line in f:
+                    if devname in line:
+                        return True
+        except Exception:
+            pass
+        return False
 
     @dbus.service.method("org.example.USBManager",
                          in_signature='s', out_signature='b')
@@ -39,10 +55,16 @@ class USBManagerService(dbus.service.Object):
         """
         Mount thiết bị USB theo device_id.
         """
-        for dev in self.device_list:
-            if dev["id"] == device_id:
-                dev["status"] = "mounted"
-                return True
+        for device in self.context.list_devices(subsystem='block'):
+            if device.get('ID_SERIAL_SHORT') == device_id or device.get('DEVPATH') == device_id:
+                dev_node = device.device_node
+                mount_point = f"/mnt/usb_{device.get('ID_VENDOR_ID')}_{device.get('ID_MODEL_ID')}"
+                try:
+                    subprocess.run(['mkdir', '-p', mount_point], check=True)
+                    subprocess.run(['mount', dev_node, mount_point], check=True)
+                    return True
+                except Exception:
+                    return False
         return False
 
     @dbus.service.method("org.example.USBManager",
@@ -51,10 +73,14 @@ class USBManagerService(dbus.service.Object):
         """
         Unmount thiết bị USB theo device_id.
         """
-        for dev in self.device_list:
-            if dev["id"] == device_id:
-                dev["status"] = "unmounted"
-                return True
+        for device in self.context.list_devices(subsystem='block'):
+            if device.get('ID_SERIAL_SHORT') == device_id or device.get('DEVPATH') == device_id:
+                dev_node = device.device_node
+                try:
+                    subprocess.run(['umount', dev_node], check=True)
+                    return True
+                except Exception:
+                    return False
         return False
 
     @dbus.service.method("org.example.USBManager",
@@ -87,3 +113,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+"""
+Hướng dẫn sử dụng:
+- Chạy trực tiếp: python3 usb_management/dbus_service.py
+- Hoặc tạo file .service cho systemd để tự động khởi động cùng hệ thống.
+"""

@@ -1,5 +1,14 @@
-import pyudev
+try:
+    import pyudev
+except ImportError:
+    print("pyudev not installed. Please install with: pip install pyudev")
+    exit(1)
 import subprocess
+import shutil
+
+if not shutil.which('udisksctl'):
+    print("udisksctl not found. Please install udisks2 package.")
+    exit(1)
 
 context = pyudev.Context()
 monitor = pyudev.Monitor.from_netlink(context)
